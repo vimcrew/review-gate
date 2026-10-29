@@ -4,8 +4,8 @@ Start with **base + one profile + one stack**. These are review criteria, not
 instructions to run tools or change the reviewer's response format. Edit them to
 match your supported versions, deployment model and documented contracts.
 
-Project rule loading requires the Review Gate release containing project-rules
-support (monorepo PR #1148); older engines reject `rules` and `max_rules_bytes`.
+Project rule loading requires a Review Gate engine with project-rules support;
+older engines reject `rules` and `max_rules_bytes`.
 Use the [Action workflow](../examples/review-gate.yml) to configure vendor secrets
 and base checkout. The YAML files below are gate configs, not Actions workflows.
 

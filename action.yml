@@ -1,5 +1,5 @@
 name: VimCrew Review Gate
-description: Cross-vendor AI review quorum for pull requests (Claude, GPT, GLM, Kimi, MiniMax, DeepSeek, Qwen) with your own API keys; the verdict is the job's exit code.
+description: Cross-vendor AI review quorum for pull requests with your own API keys.
 author: VimCrew
 branding:
   icon: shield
@@ -67,7 +67,7 @@ runs:
       # command-injection path. The image is pinned by digest (immutable): the release
       # script substitutes it, and an unsubstituted placeholder fails the step below.
       env:
-        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:a5ab333de846295f2ad4be445203979a60ce5d676d3b7dd962213ca22dfd001a
+        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:df1171656ed472113953c8cf2fc558d78b1ff78e85be0e2032ca9479a45c8597
         RG_MODE: ${{ inputs.mode }}
         RG_LANGUAGE: ${{ inputs.language }}
         RG_CONFIG: ${{ inputs.config }}

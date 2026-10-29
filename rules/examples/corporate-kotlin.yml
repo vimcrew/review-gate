@@ -1,5 +1,5 @@
 # Copy to .vimcrew/review-gate.yml after copying rules/ to .vimcrew/rules/.
-# Requires a Review Gate engine with project-rules support (PR #1148).
+# Requires a Review Gate engine with project-rules support.
 mode: block
 quorum: 2
 max_rules_bytes: 24000

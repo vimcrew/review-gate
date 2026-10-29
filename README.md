@@ -118,7 +118,7 @@ Models are instructed to write findings in the output language. JSON report keys
 language. Provider diagnostics and developer logs retain their original text. Publication keys
 (`vimcrew:pub:…`), JSON parsing and the `REDACTED` redaction marker are language-independent; the
 fixed author-marker replacement is also unchanged. Prompts are maintained separately from the UI
-message catalog (`src/main/resources/review-gate/messages.json` in the source repository).
+message catalog, which provides English and Russian translations.
 
 ## Modes
 
@@ -183,8 +183,8 @@ glob matches are sorted by filename. Organization rules come first, then project
 base, which can refine the general requirements. `rules: []` disables only local rules.
 Truncation is visible; contents of subsequent files are not fetched after the shared budget runs out.
 The summary and local JSON report identify each external file as `repo@resolved-SHA:path`.
-Contents and paths pass through `redactSecrets`; sources and warnings are removed from uploaded
-anonymized metrics.
+Contents and paths pass through `redactSecrets`. The JSON report stays on your runner; it is not
+uploaded to VimCrew.
 
 The default is `GITHUB_TOKEN` (CLI also accepts `GH_TOKEN`). For a private external repository,
 pass a separate token with **contents:read** and access to that repository:
@@ -370,9 +370,8 @@ summary says so and names `max_tokens` — raise it.
 - **Your code goes only to the providers you configure.** The diff, title and description are sent
   from your runner directly to the endpoints of the two reviewers in your config, under your API
   keys and your agreements with those providers. Choose vendors whose data terms fit your code.
-- **No telemetry today.** The gate sends nothing to VimCrew. Anonymous quality statistics (which
-  model found what, no code and no texts) are planned as **strictly opt-in**: off unless you enable
-  them explicitly.
+- No telemetry. Opt-in anonymous statistics are planned; report_upload is reserved and currently sends nothing.
+  Setting `report_upload: true` only prints a warning; it does not send a report to VimCrew.
 - Before the diff leaves the runner, likely secrets in it are redacted (`sk-…`, `ghp_…`, `AKIA…`, PEM,
   literal passwords). The redaction is conservative and may also mask references such as
   `${{ github.token }}`; the reviewers are told that `«REDACTED»` is the gate's marker, not code, and
