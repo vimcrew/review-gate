@@ -270,7 +270,10 @@ summary says so and names `max_tokens` — raise it.
 - **No telemetry today.** The gate sends nothing to VimCrew. Anonymous quality statistics (which
   model found what, no code and no texts) are planned as **strictly opt-in**: off unless you enable
   them explicitly.
-- Before the diff leaves the runner, likely secrets in it are redacted.
+- Before the diff leaves the runner, likely secrets in it are redacted (`sk-…`, `ghp_…`, `AKIA…`, PEM,
+  literal passwords). The redaction is conservative and may also mask references such as
+  `${{ github.token }}`; the reviewers are told that `«REDACTED»` is the gate's marker, not code, and
+  not a finding.
 
 ## License
 

@@ -59,7 +59,7 @@ runs:
       # command-injection path. The image is pinned by digest (immutable): the release
       # script substitutes it, and an unsubstituted placeholder fails the step below.
       env:
-        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:c260354ce7aa948c8beae74bce3919f1b5a84debb91c9c25fe8eba1f8e13a5ba
+        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:48cca9cb8170bf59250676d3789fd38a7b4482c7e2ff3573f7a9fed4234a0648
         RG_MODE: ${{ inputs.mode }}
         RG_CONFIG: ${{ inputs.config }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
