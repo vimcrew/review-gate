@@ -1,0 +1,35 @@
+# Copy to .github/workflows/review-gate.yml in your repository and add the API-key secrets of two vendors.
+# A config file (.vimcrew/review-gate.yml) is optional: without it the gate uses defaults in `comment` mode.
+name: Review Gate
+
+on:
+  # `pull_request`, NOT `pull_request_target`: the gate never needs the PR's code with your secrets.
+  pull_request:
+    # labeled/unlabeled: the `review-gate:override` label (a human with write access lifts the block).
+    # Do NOT filter by label name in the job's `if:` — a skipped job counts as success for a required check.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read        # checkout of the base branch (config only)
+  pull-requests: write  # summary comment and inline findings
+
+concurrency:
+  group: review-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The gate config is read from the BASE commit: a PR author cannot weaken the gate by editing
+      # the config in their own PR. The PR's code is never executed: the diff comes from the GitHub API.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: vimcrew/review-gate@v1   # pin a full commit SHA in production
+        with:                          # no config yet → defaults, `comment` mode; set `mode: block` in the config later
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
