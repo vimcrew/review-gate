@@ -1,0 +1,14 @@
+# Copy to .vimcrew/review-gate.yml after copying rules/ to .vimcrew/rules/.
+# Two companion stacks for a repository that changes infrastructure and SQL.
+mode: block
+quorum: 2
+max_rules_bytes: 24000
+rules: [
+  .vimcrew/rules/base/review-essentials.md,
+  .vimcrew/rules/profiles/corporate.md,
+  .vimcrew/rules/stacks/infra-terraform-k8s.md,
+  .vimcrew/rules/stacks/data-sql-migrations.md
+]
+reviewers:
+  - {id: claude, vendor: anthropic, model: claude-opus-5-5}
+  - {id: gpt, vendor: openai, model: gpt-6.1-sol}

@@ -1,0 +1,13 @@
+# Copy to .vimcrew/review-gate.yml after copying rules/ to .vimcrew/rules/.
+# Supply ANTHROPIC_API_KEY and OPENAI_API_KEY through the Action inputs.
+mode: comment
+quorum: 2
+max_rules_bytes: 24000
+rules: [
+  .vimcrew/rules/base/review-essentials.md,
+  .vimcrew/rules/profiles/individual.md,
+  .vimcrew/rules/stacks/python-fastapi.md
+]
+reviewers:
+  - {id: claude, vendor: anthropic, model: claude-opus-5-5}
+  - {id: gpt, vendor: openai, model: gpt-6.1-sol}

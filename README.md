@@ -51,7 +51,7 @@ the PR that adds the workflow is reviewed too) the gate uses defaults: `comment`
 per vendor whose key you passed, with the vendor's default model, and a quorum of 2 (two
 different vendors must approve; an explicit `quorum` above 4 or above the number of reviewers is a
 config error, exit `3`). The
-summary says so explicitly ("config not found — defaults used", in Russian in the current build) and
+summary says so explicitly ("Config not found — using defaults") and
 lists the models. With a key of only one vendor the gate does not review and tells you a second
 vendor is needed (exit `0` in `comment` mode). A config that exists but is invalid is still exit `3`.
 After a week in `comment` mode add a config with `mode: block` and make the job a required check.
@@ -84,6 +84,7 @@ image by an immutable digest and runs it with the workspace mounted read-only.
 | Input | Default | Meaning |
 |---|---|---|
 | `mode` | from config | `block` or `comment` |
+| `language` | `en` | `en` or `ru`; config takes priority, input is a fallback |
 | `config` | `.vimcrew/review-gate.yml` | config path relative to the workspace |
 | `anthropic-api-key` | — | `ANTHROPIC_API_KEY` |
 | `openai-api-key` | — | `OPENAI_API_KEY` |
@@ -93,6 +94,7 @@ image by an immutable digest and runs it with the workspace mounted read-only.
 | `deepseek-api-key` | — | `DEEPSEEK_API_KEY` |
 | `dashscope-api-key` | — | `DASHSCOPE_API_KEY` (Qwen) |
 | `github-token` | `github.token` | reads the PR and posts comments |
+| `rules-token` | `github-token` | contents:read access to external rules repositories |
 
 | Output | Meaning |
 |---|---|
@@ -100,6 +102,23 @@ image by an immutable digest and runs it with the workspace mounted read-only.
 
 Keys enter the container only as these environment variables. A custom `api_key_env` in the config
 is not supported by the action.
+
+## Output language
+
+English is the default for summaries (PR and `GITHUB_STEP_SUMMARY`), reviewer decisions, reasons,
+warnings, inline comments and costs. Set `language: ru` in `.vimcrew/review-gate.yml` for Russian.
+Allowed values are `en` and `ru`; other values are config errors (exit `3`). The trusted base config
+wins over the optional Action `language` input / CLI `--language en|ru`; the input is a fallback
+when the config omits `language` or is absent. This keeps repository policy consistent across callers.
+For local `--diff`, the local config has the same priority. Without a readable base, only the input
+or the English default is available. Invalid YAML uses that fallback for its error message.
+
+Models are instructed to write findings in the output language. JSON report keys and wire values
+(status, decision, outcome, error kinds) stay unchanged; gate-generated reason text follows the output
+language. Provider diagnostics and developer logs retain their original text. Publication keys
+(`vimcrew:pub:…`), JSON parsing and the `REDACTED` redaction marker are language-independent; the
+fixed author-marker replacement is also unchanged. Prompts are maintained separately from the UI
+message catalog (`src/main/resources/review-gate/messages.json` in the source repository).
 
 ## Modes
 
@@ -135,6 +154,69 @@ the diff — a truncated or unreadable answer, a read timeout, a cost-cap absten
 can cause) and a 408 are not "unavailable" either. Residual risk: 500/502/503/529 after retries do
 count as unavailable, so an input that deterministically crashes one provider would remove its vote;
 require every reviewer (`quorum` equal to the number of reviewers) if that is unacceptable.
+
+## Config is read from base
+
+For PRs and Actions events (including `--diff`), the entire config is read from base SHA git
+objects, regardless of checkout. Its path must be inside the repository. A missing config in an
+available base uses defaults. An unavailable base/config blob produces a warning without using
+the checkout: exit `2` in `block`, or when the mode is still unknown. Explicit `--mode comment`
+uses defaults and reviews without organization sources.
+
+## Rules from another repository
+
+Keep product, team or organization rules in a separate GitHub repository, without copying them
+into each project. Add sources to the config **from the base commit**:
+
+```yaml
+rules_sources:
+  - repo: acme/engineering-rules
+    ref: v1.2.0                 # prefer a full commit SHA or tag over a moving branch
+    paths: [AGENTS.md, "product/*.md"]
+rules: [AGENTS.md, ".vimcrew/review-rules.md"]
+max_rules_bytes: 24000          # shared external + local budget, including names and headers
+```
+
+The loader uses `gh api`: it resolves the ref once, then reads the tree and contents at that
+full SHA. A moving branch produces a summary warning. Sources and paths follow config order;
+glob matches are sorted by filename. Organization rules come first, then project rules from
+base, which can refine the general requirements. `rules: []` disables only local rules.
+Truncation is visible; contents of subsequent files are not fetched after the shared budget runs out.
+The summary and local JSON report identify each external file as `repo@resolved-SHA:path`.
+Contents and paths pass through `redactSecrets`; sources and warnings are removed from uploaded
+anonymized metrics.
+
+The default is `GITHUB_TOKEN` (CLI also accepts `GH_TOKEN`). For a private external repository,
+pass a separate token with **contents:read** and access to that repository:
+
+```yaml
+with:
+  rules-token: ${{ secrets.RULES_READ_TOKEN }}
+```
+
+The CLI equivalent is `RULES_TOKEN`. It is passed through the environment, never logged, and
+does not change the PR publication token. API errors, 403/404, incomplete trees and unmatched
+paths/globs cause `block` mode to exit **2** with “organization rules not loaded”, before
+calling models. In `comment` mode review continues without external rules, with a prominent
+warning in the log, summary and JSON report. Partial external results are discarded.
+
+Planned: rules served by an MCP server. No MCP configuration key is available yet.
+
+## Project rules
+
+Reviewers also see your project's rules, read from the **base commit**: by default `AGENTS.md`,
+`CLAUDE.md`, `.github/copilot-instructions.md` and `.vimcrew/review-rules.md` (whichever exist).
+Set your own list with `rules:` in the config (paths or globs from the repository root, e.g.
+`rules: [AGENTS.md, "docs/rules/*.md"]`); `rules: []` turns it off. PR rules come from git objects at
+the base SHA, regardless of the checkout. If the base objects are unavailable, no rules are loaded;
+the log and summary warn explicitly. Losing local rules after loading the trusted config keeps the
+review verdict; losing the config itself follows the policy above. A change to `AGENTS.md` in the PR stays untrusted diff data. Rules go into the
+prompt as a separate trusted section before the PR data, within a byte budget (`max_rules_bytes`,
+default 24000, including file headings and truncation markers; the fixed section instruction is
+excluded). Overflow is truncated and marked; subsequent files are not read. File names (capped at
+240 bytes) and contents pass through the secret redactor. Local `--diff` alone supports `--rules-root`
+and labels the directory source explicitly. The summary lists the files considered and truncation. Rules add to every
+reviewer's input, and so to the cost.
 
 ## Lifting a block: the `review-gate:override` label
 
@@ -184,6 +266,13 @@ reviewers:
 An unsafe threshold is a config error (`3`), not a silent approve: empty `categories`, an unknown
 category, `categories` without `security`, `min_reviewers_flagging` other than 1 or 2.
 
+## Rule templates
+
+Choose a base, a corporate or individual profile, and a stack from the
+[ready-to-use rules library](rules/README.md). It includes 13 stacks and four
+gate configs with local `rules:` paths. Project-rules support in the engine is
+required; the library explains base-commit loading and the 24000-byte budget.
+
 ## Vendors
 
 `vendor` is who trained the model (quorum independence is checked on it); `protocol` is how the
@@ -219,9 +308,23 @@ this gate included, must use `coding/paas/v4`, otherwise the API answers `1113 I
 Balance` (Z.ai Coding Plan FAQ). For a pay-as-you-go balance Z.ai documents the general OpenAI
 endpoint `api/paas/v4`; its Anthropic route bills the balance only for allowlisted accounts that
 never bought a Coding Plan. MiniMax uses one endpoint for both plans, with different keys.
-`billing: subscription` changes only the display: "subscription (estimate ≈ $X)", kept out of the
-total. It does **not** relax `max_usd_per_pr`: the gate cannot verify the key type, so the cap still
+`billing: subscription` sets the marginal actual cost to $0 and shows its token-priced PAYG
+estimate separately. It does **not** relax `max_usd_per_pr`: the gate cannot verify the key type, so the cap still
 plans and trims `max_tokens` by the model's token prices.
+
+The summary shows actual spend, the PAYG forecast for **all** reviewers as if none had subscriptions,
+and subscription savings (PAYG minus actual). Fixed subscription fees are not allocated to a run.
+Missing metering is shown as a lower bound (`≥`); missing cache detail can give a range. Each total
+preserves its own bounds, so actual subscription spend remains exactly $0 even when PAYG is unknown.
+
+Metrics keep `schema: 1`: reviewer `cost_usd` is actual spend (`0` for subscriptions, previously
+`null`), and `cost_usd_payg` is token-priced cost. `cost_usd_estimate` remains a subscription-only
+alias of `cost_usd_payg`. Numeric cost sums remain compatible; identify subscriptions by `billing`,
+not by a null cost. Gate totals are `total_cost_usd`, `total_cost_usd_payg`, and
+`subscription_savings_usd`. For reviewers and totals, `_min` holds a range's lower endpoint (the
+unsuffixed field is the upper endpoint). Incomplete metering without `_min` means only a lower
+bound is known; a null reviewer cost means unknown. Flags are `metering_incomplete` for actual,
+`metering_payg_incomplete` for PAYG, and gate `subscription_savings_incomplete` for savings.
 
 ### Presets
 
@@ -281,3 +384,7 @@ summary says so and names `max_tokens` — raise it.
 - The container image `ghcr.io/vimcrew/review-gate` that the action runs is proprietary and is
   provided under the [VimCrew Review Gate EULA](EULA.md). Running the action means running that
   image under the EULA.
+- Open-source components inside the image (Java/Kotlin libraries, Eclipse Temurin JRE, GitHub CLI,
+  base OS packages) keep their own licenses; their notices are in the image at
+  `/licenses/THIRD-PARTY-NOTICES.txt`, e.g.
+  `docker run --rm --entrypoint cat ghcr.io/vimcrew/review-gate@<digest> /licenses/THIRD-PARTY-NOTICES.txt`.

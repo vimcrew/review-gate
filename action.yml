@@ -9,6 +9,10 @@ inputs:
     description: "block | comment; empty — taken from the config file"
     required: false
     default: ""
+  language:
+    description: "Output language: en | ru; fallback when the base config has no language (default en)"
+    required: false
+    default: ""
   config:
     description: Config path relative to GITHUB_WORKSPACE
     required: false
@@ -45,6 +49,10 @@ inputs:
     description: "Token for reading the PR and posting comments (pull-requests: write)"
     required: false
     default: ${{ github.token }}
+  rules-token:
+    description: "contents:read token for external rules repositories; empty — github-token"
+    required: false
+    default: ""
 outputs:
   report:
     description: Path to review-gate-report.json (run metrics, schema 1)
@@ -59,8 +67,9 @@ runs:
       # command-injection path. The image is pinned by digest (immutable): the release
       # script substitutes it, and an unsubstituted placeholder fails the step below.
       env:
-        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:48cca9cb8170bf59250676d3789fd38a7b4482c7e2ff3573f7a9fed4234a0648
+        RG_IMAGE: ghcr.io/vimcrew/review-gate@sha256:a5ab333de846295f2ad4be445203979a60ce5d676d3b7dd962213ca22dfd001a
         RG_MODE: ${{ inputs.mode }}
+        RG_LANGUAGE: ${{ inputs.language }}
         RG_CONFIG: ${{ inputs.config }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
         OPENAI_API_KEY: ${{ inputs.openai-api-key }}
@@ -70,6 +79,8 @@ runs:
         DEEPSEEK_API_KEY: ${{ inputs.deepseek-api-key }}
         DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
         GH_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        RULES_TOKEN: ${{ inputs.rules-token }}
       run: |
         set -euo pipefail
         case "${RG_IMAGE}" in
@@ -90,12 +101,13 @@ runs:
         fi
         args=(run --config "/github/workspace/${RG_CONFIG}" --report-file /github/report/review-gate-report.json)
         if [ -n "${RG_MODE}" ]; then args+=(--mode "${RG_MODE}"); fi
+        if [ -n "${RG_LANGUAGE}" ]; then args+=(--language "${RG_LANGUAGE}"); fi
         # The workspace is mounted read-only, so the metrics record goes to RUNNER_TEMP.
         echo "report=${RUNNER_TEMP}/review-gate-report.json" >> "${GITHUB_OUTPUT}"
         # Only the listed variables enter the container; the workspace is mounted read-only.
         docker run --rm \
           -e ANTHROPIC_API_KEY -e OPENAI_API_KEY -e ZAI_API_KEY -e MOONSHOT_API_KEY -e MINIMAX_API_KEY \
-          -e DEEPSEEK_API_KEY -e DASHSCOPE_API_KEY -e GH_TOKEN -e GITHUB_REPOSITORY -e GITHUB_EVENT_NAME \
+          -e DEEPSEEK_API_KEY -e DASHSCOPE_API_KEY -e GH_TOKEN -e GITHUB_TOKEN -e RULES_TOKEN -e GITHUB_REPOSITORY -e GITHUB_EVENT_NAME \
           -e GITHUB_EVENT_PATH=/github/event.json -v "${GITHUB_EVENT_PATH}:/github/event.json:ro" \
           -e GITHUB_STEP_SUMMARY=/github/step_summary -v "${GITHUB_STEP_SUMMARY}:/github/step_summary" \
           -v "${GITHUB_WORKSPACE}:/github/workspace:ro" -w /github/workspace \

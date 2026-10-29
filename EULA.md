@@ -1,14 +1,9 @@
 # VimCrew Review Gate — End User License Agreement (container image)
 
-> **DRAFT — requires owner/legal review.** This text is a working draft prepared together with the
-> code. It is not in force and must not be published or relied upon until the owner and a lawyer
-> have reviewed it. Placeholders in square brackets must be filled in.
+Version: 1.0 (public preview) · Date: 2026-10-29
 
-Version: draft-0 · Date: [EFFECTIVE DATE]
-
-This End User License Agreement ("EULA") is between [LICENSOR LEGAL NAME], [JURISDICTION AND
-REGISTERED ADDRESS] ("VimCrew", "we") and the person or entity that downloads, pulls or runs the
-software ("you").
+This End User License Agreement ("EULA") is between AB, an individual, the author of VimCrew
+("VimCrew", "we"), and the person or entity that downloads, pulls or runs the software ("you").
 
 ## 1. What this EULA covers
 
@@ -30,8 +25,10 @@ revocable, royalty-free license to run the Software, unmodified, to review chang
 in source code repositories that you own or are authorized to work on, including in continuous
 integration jobs of your organization.
 
-2.2. [OPEN QUESTION FOR THE OWNER: free for all uses, or free with limits (e.g. number of private
-repositories / commercial use) and a paid tier? Section 2.1 currently assumes free use.]
+2.2. Public preview. During the public preview the license in section 2.1 is free of charge and
+without usage limits, for personal and commercial use. Terms for later versions (including any paid
+tier) have not been decided yet; they will be published together with those versions, and a
+version released under this EULA continues to be governed by this EULA (section 7).
 
 ## 3. Restrictions
 
@@ -81,8 +78,10 @@ interest in the Software. No rights are granted except those expressly stated in
 The image contains third-party open-source components (including the Eclipse Temurin Java runtime,
 the GitHub CLI `gh`, the base operating system packages, and Java/Kotlin libraries). Each is
 licensed under its own license ("Open-Source Components"), and nothing in this EULA limits your
-rights under those licenses. [TODO before release: ship a third-party notices file inside the image
-and reference its path here.]
+rights under those licenses. The notices for these components are shipped inside the image at
+`/licenses/THIRD-PARTY-NOTICES.txt` (the GitHub CLI license at `/licenses/gh/LICENSE`, the Java
+runtime notices at `/opt/java/openjdk/legal/`, the operating system package notices at
+`/usr/share/doc/*/copyright`).
 
 ## 7. Updates
 
@@ -101,20 +100,14 @@ FINDINGS; IT DOES NOT REPLACE YOUR OWN REVIEW AND TESTING.
 
 TO THE MAXIMUM EXTENT PERMITTED BY LAW, VIMCREW WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
 SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES, OR FOR LOSS OF PROFITS, DATA OR GOODWILL, OR FOR
-CHARGES OF MODEL PROVIDERS, ARISING FROM THE USE OF THE SOFTWARE. VIMCREW'S TOTAL LIABILITY UNDER
-THIS EULA IS LIMITED TO [AMOUNT, e.g. USD 100].
+CHARGES OF MODEL PROVIDERS, ARISING FROM THE USE OF THE SOFTWARE.
 
 ## 10. Termination
 
 This EULA is effective until terminated. It terminates automatically if you breach it. On
-termination you must stop running the Software and delete your copies of it. Sections 3, 5, 8, 9
-and 11 survive termination.
+termination you must stop running the Software and delete your copies of it. Sections 3, 5, 8
+and 9 survive termination.
 
-## 11. Governing law
+## 11. Contact
 
-This EULA is governed by the laws of [GOVERNING LAW], and disputes are subject to the exclusive
-jurisdiction of the courts of [VENUE], unless mandatory law provides otherwise.
-
-## 12. Contact
-
-[CONTACT EMAIL / ADDRESS]
+Questions about this EULA: contact@vimcrew.com
